@@ -1,0 +1,220 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* GulPlaza Design System - Warm Paper Theme */
+    --background: 40 28% 93%; /* #F4EFE6 warm off-white */
+    --foreground: 0 0% 7%; /* #111111 */
+    --card: 40 28% 93%;
+    --card-foreground: 0 0% 7%;
+    --popover: 40 28% 93%;
+    --popover-foreground: 0 0% 7%;
+    --primary: 0 0% 7%; /* Black for primary text */
+    --primary-foreground: 40 28% 93%;
+    --secondary: 40 20% 88%;
+    --secondary-foreground: 0 0% 7%;
+    --muted: 40 15% 85%;
+    --muted-foreground: 37 8% 41%; /* #6E6A63 */
+    --accent: 0 65% 54%; /* #D93A3A warm red */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 65% 54%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 7% / 0.10;
+    --input: 0 0% 7% / 0.10;
+    --ring: 0 65% 54%;
+    --radius: 1.125rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', sans-serif;
+    background-color: #F4EFE6;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.02em;
+    line-height: 0.95;
+  }
+  
+  .font-mono {
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  
+  .font-urdu {
+    font-family: 'Noto Nastaliq Urdu', serif;
+  }
+}
+
+@layer components {
+  /* Paper Card Style */
+  .paper-card {
+    @apply relative rounded-[18px] border border-[rgba(17,17,17,0.10)];
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.03) 100%);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.12);
+  }
+  
+  .paper-card-dark {
+    @apply relative rounded-[18px] border border-[rgba(255,255,255,0.10)];
+    background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.25);
+  }
+  
+  /* Accent Card (Red) */
+  .accent-card {
+    @apply relative rounded-[18px];
+    background: #D93A3A;
+    box-shadow: 0 18px 40px rgba(217, 58, 58, 0.25);
+  }
+  
+  /* Button Styles */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-full font-medium transition-all duration-200;
+    background: #111111;
+    color: #F4EFE6;
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    background: #000000;
+  }
+  
+  .btn-accent {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-full font-medium transition-all duration-200;
+    background: #D93A3A;
+    color: white;
+  }
+  
+  .btn-accent:hover {
+    transform: translateY(-2px);
+    background: #C43333;
+  }
+  
+  .btn-outline {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-full font-medium transition-all duration-200 border-2;
+    border-color: #111111;
+    color: #111111;
+    background: transparent;
+  }
+  
+  .btn-outline:hover {
+    transform: translateY(-2px);
+    background: rgba(17, 17, 17, 0.05);
+  }
+  
+  /* Tag/Label Style */
+  .tag {
+    @apply inline-block px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-full;
+    font-family: 'IBM Plex Mono', monospace;
+    background: rgba(17, 17, 17, 0.08);
+    color: #6E6A63;
+  }
+  
+  .tag-accent {
+    @apply inline-block px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-full;
+    font-family: 'IBM Plex Mono', monospace;
+    background: rgba(217, 58, 58, 0.15);
+    color: #D93A3A;
+  }
+  
+  /* Section Base */
+  .section-pinned {
+    @apply relative w-screen h-screen overflow-hidden;
+  }
+  
+  .section-flowing {
+    @apply relative w-full py-16 md:py-24;
+  }
+  
+  /* Grain Overlay */
+  .grain-overlay {
+    @apply fixed inset-0 pointer-events-none z-50;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.04;
+    mix-blend-mode: multiply;
+  }
+  
+  /* RTL Support for Urdu */
+  .rtl {
+    direction: rtl;
+  }
+  
+  /* Animation Classes */
+  .fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+  
+  .slide-up {
+    animation: slideUp 0.6s ease-out forwards;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    from { 
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Scroll Indicator */
+  .scroll-indicator {
+    @apply absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2;
+    animation: bounce 2s infinite;
+  }
+  
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+      transform: translateX(-50%) translateY(0);
+    }
+    40% {
+      transform: translateX(-50%) translateY(-8px);
+    }
+    60% {
+      transform: translateX(-50%) translateY(-4px);
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Custom text sizes */
+  .text-display {
+    font-size: clamp(2.75rem, 5vw, 4.5rem);
+    line-height: 0.95;
+  }
+  
+  .text-headline {
+    font-size: clamp(2.125rem, 3.6vw, 3.25rem);
+    line-height: 1.05;
+  }
+  
+  .text-title {
+    font-size: clamp(1.5rem, 2.4vw, 2rem);
+    line-height: 1.1;
+  }
+}
