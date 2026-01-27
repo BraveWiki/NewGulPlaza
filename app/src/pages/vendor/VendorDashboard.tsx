@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -52,6 +52,7 @@ const navItems = [
 
 export default function VendorDashboard() {
   const { logout } = useAuth();
+  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [greeting, setGreeting] = useState('');
 
