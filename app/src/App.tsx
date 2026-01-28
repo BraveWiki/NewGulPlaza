@@ -43,7 +43,8 @@ function App() {
               <Route path="/product/:productId" element={<ProductPage />} />
               <Route path="/stories" element={<StoriesPage />} />
               <Route path="/donate" element={<DonatePage />} />
-              
+              // Add this route to your App.tsx or router configuration
+<Route path="/admin" element={<AdminPage />} />
               {/* Vendor Routes */}
               <Route path="/vendor/login" element={<VendorLogin />} />
               <Route path="/vendor/dashboard" element={
