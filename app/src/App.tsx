@@ -3,6 +3,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/sonner';
 
 // Public Pages
+import AdminPage from '@/pages/AdminPage';
 import HomePage from '@/pages/HomePage';
 import ShopPage from '@/pages/ShopPage';
 import ProductPage from '@/pages/ProductPage';
@@ -37,14 +38,15 @@ function App() {
           <main>
             <Routes>
               {/* Public Routes */}
+            
+              <Route path="/admin" element={<AdminPage />} />
               <Route path="/" element={<HomePage />} />
               <Route path="/shops" element={<AllShopsPage />} />
               <Route path="/shop/:shopId" element={<ShopPage />} />
               <Route path="/product/:productId" element={<ProductPage />} />
               <Route path="/stories" element={<StoriesPage />} />
               <Route path="/donate" element={<DonatePage />} />
-              // Add this route to your App.tsx or router configuration
-<Route path="/admin" element={<AdminPage />} />
+              
               {/* Vendor Routes */}
               <Route path="/vendor/login" element={<VendorLogin />} />
               <Route path="/vendor/dashboard" element={
