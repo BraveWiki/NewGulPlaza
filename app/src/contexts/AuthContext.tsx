@@ -1,5 +1,5 @@
 // src/contexts/AuthContext.tsx
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
@@ -8,8 +8,8 @@ import {
   updateProfile,
   type User as FirebaseUser 
 } from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
 
 interface AuthContextType {
@@ -18,69 +18,87 @@ interface AuthContextType {
   userRole: 'vendor' | 'admin' | 'customer' | null;
   shopId: string | null;
   loading: boolean;
+  isAuthenticated: boolean;
+  isVendor: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName?: string) => Promise<void>;
   logout: () => Promise<void>;
-  isVendor: boolean;
-  isAdmin: boolean;
+  refreshProfile: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [userRole, setUserRole] = useState<'vendor' | 'admin' | 'customer' | null>(null);
-  const [shopId, setShopId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      
-      if (user) {
-        // Fetch user profile from Firestore
-        try {
-          const profileDoc = await getDoc(doc(db, 'users', user.uid));
-          if (profileDoc.exists()) {
-            const profile = profileDoc.data() as UserProfile;
-            setUserProfile(profile);
-            setUserRole(profile.role);
-            if (profile.role === 'vendor' && profile.shopId) {
-              setShopId(profile.shopId);
-            }
-          } else {
-            // Default to customer if no profile exists
-            setUserRole('customer');
-          }
-        } catch (error) {
-          console.error('Error fetching user profile:', error);
-          setUserRole('customer');
-        }
+  const fetchUserProfile = useCallback(async (user: FirebaseUser) => {
+    try {
+      const profileDoc = await getDoc(doc(db, 'users', user.uid));
+      if (profileDoc.exists()) {
+        const profile = profileDoc.data() as UserProfile;
+        setUserProfile(profile);
+        return profile;
       } else {
-        setUserProfile(null);
-        setUserRole(null);
-        setShopId(null);
+        // Create default profile if doesn't exist
+        const newProfile: Omit<UserProfile, 'uid'> = {
+          email: user.email || '',
+          displayName: user.displayName || user.email?.split('@')[0] || 'User',
+          role: 'customer',
+          createdAt: new Date().toISOString()
+        };
+        await setDoc(doc(db, 'users', user.uid), {
+          ...newProfile,
+          updatedAt: serverTimestamp()
+        });
+        setUserProfile({ uid: user.uid, ...newProfile });
+        return { uid: user.uid, ...newProfile };
       }
-      
-      setLoading(false);
-    });
-
-    return unsubscribe;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
   }, []);
 
-  const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-  };
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
 
-  const register = async (email: string, password: string, displayName?: string) => {
+    const initAuth = () => {
+      unsubscribe = onAuthStateChanged(auth, async (user) => {
+        setCurrentUser(user);
+        
+        if (user) {
+          await fetchUserProfile(user);
+        } else {
+          setUserProfile(null);
+        }
+        
+        setLoading(false);
+        setIsInitialized(true);
+      });
+    };
+
+    initAuth();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [fetchUserProfile]);
+
+  const login = useCallback(async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
+  }, []);
+
+  const register = useCallback(async (email: string, password: string, displayName?: string) => {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     
     if (displayName) {
       await updateProfile(user, { displayName });
     }
     
-    // Create user profile in Firestore
     const userProfile: Omit<UserProfile, 'uid'> = {
       email: user.email || '',
       displayName: displayName || user.email?.split('@')[0] || 'User',
@@ -88,43 +106,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createdAt: new Date().toISOString()
     };
     
-    await setDoc(doc(db, 'users', user.uid), userProfile);
-  };
+    await setDoc(doc(db, 'users', user.uid), {
+      ...userProfile,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await firebaseSignOut(auth);
-    setShopId(null);
-    setUserRole(null);
     setUserProfile(null);
-  };
+  }, []);
 
-  const value = {
+  const refreshProfile = useCallback(async () => {
+    if (currentUser) {
+      await fetchUserProfile(currentUser);
+    }
+  }, [currentUser, fetchUserProfile]);
+
+  const value: AuthContextType = {
     currentUser,
     userProfile,
-    userRole,
-    shopId,
+    userRole: userProfile?.role || null,
+    shopId: userProfile?.shopId || null,
     loading,
+    isAuthenticated: !!currentUser,
+    isVendor: userProfile?.role === 'vendor',
+    isAdmin: userProfile?.role === 'admin',
     login,
     register,
     logout,
-    isVendor: userRole === 'vendor',
-    isAdmin: userRole === 'admin'
+    refreshProfile
   };
+
+  // Prevent flash of content while loading
+  if (!isInitialized && loading) {
+    return (
+      <div className="min-h-screen bg-[#F4EFE6] flex items-center justify-center">
+        <div className="animate-pulse text-[#D93A3A] text-xl font-bold">GulPlaza</div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
-
-// Add missing import
-import { setDoc } from 'firebase/firestore';
