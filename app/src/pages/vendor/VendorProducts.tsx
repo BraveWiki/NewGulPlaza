@@ -34,8 +34,8 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
-  Unsubscribe 
 } from 'firebase/firestore';
+import type { Unsubscribe } from 'firebase/firestore';
 import type { Product } from '@/types';
 
 const categories = ['Kurtas', 'Suits', 'Accessories', 'Fabrics', 'Bridal', 'Electronics', 'Food', 'Beauty', 'Other'];
