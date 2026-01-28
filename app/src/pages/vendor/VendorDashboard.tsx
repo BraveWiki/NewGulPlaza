@@ -38,7 +38,7 @@ export default function VendorDashboard() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [greeting, setGreeting] = useState('');
 
-  const { orders, stats, loading: ordersLoading, updateOrderStatus } = useOrders(shopId || '');
+const { orders, stats, loading: ordersLoading } = useOrders(shopId || '');
   const { products, loading: productsLoading } = useProducts({ 
     shopId: shopId || '',
     limit: 3
