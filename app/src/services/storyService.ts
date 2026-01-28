@@ -4,8 +4,7 @@ import {
   getDocs, 
   query, 
   orderBy,
-  limit,
-  where
+  limit
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Story } from '@/types';
