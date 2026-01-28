@@ -1,3 +1,4 @@
+// src/pages/VendorOrders.tsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -16,114 +17,40 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
+import { useOrders } from '@/hooks/useOrders';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-
-// Mock orders data
-const initialOrders = [
-  {
-    id: 'ORD-001',
-    product: 'Hand-embroidered Kurta',
-    productImage: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80',
-    customer: {
-      name: 'Amina Rahman',
-      phone: '+92-300-1234567',
-      address: '123 Main Street, Gulberg',
-      city: 'Lahore',
-    },
-    quantity: 2,
-    amount: 4800,
-    status: 'pending',
-    date: '2024-01-26T10:30:00',
-    notes: 'Please deliver after 5 PM',
-  },
-  {
-    id: 'ORD-002',
-    product: 'Traditional Scarf',
-    productImage: 'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=400&q=80',
-    customer: {
-      name: 'Bilal Qureshi',
-      phone: '+92-301-2345678',
-      address: '45 Garden Town',
-      city: 'Lahore',
-    },
-    quantity: 1,
-    amount: 1200,
-    status: 'confirmed',
-    date: '2024-01-25T14:20:00',
-    notes: '',
-  },
-  {
-    id: 'ORD-003',
-    product: 'Stitched Cotton Suit',
-    productImage: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&q=80',
-    customer: {
-      name: 'Fatima Khan',
-      phone: '+92-302-3456789',
-      address: '78 DHA Phase 5',
-      city: 'Lahore',
-    },
-    quantity: 1,
-    amount: 3500,
-    status: 'shipped',
-    date: '2024-01-24T09:15:00',
-    notes: 'Gift wrap please',
-  },
-  {
-    id: 'ORD-004',
-    product: 'Embroidered Dupatta',
-    productImage: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=400&q=80',
-    customer: {
-      name: 'Zara Malik',
-      phone: '+92-303-4567890',
-      address: '90 Model Town',
-      city: 'Lahore',
-    },
-    quantity: 3,
-    amount: 5400,
-    status: 'delivered',
-    date: '2024-01-23T16:45:00',
-    notes: '',
-  },
-  {
-    id: 'ORD-005',
-    product: 'Hand-embroidered Kurta',
-    productImage: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80',
-    customer: {
-      name: 'Sana Ahmed',
-      phone: '+92-304-5678901',
-      address: '12 Johar Town',
-      city: 'Lahore',
-    },
-    quantity: 1,
-    amount: 2400,
-    status: 'cancelled',
-    date: '2024-01-22T11:00:00',
-    notes: 'Customer cancelled',
-  },
-];
+import type { Order } from '@/types';
 
 const statusFilters = ['All', 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'];
 
 export default function VendorOrders() {
-  const [orders, setOrders] = useState(initialOrders);
+  const { shopId } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+
+  const { orders, stats, loading, updateOrderStatus } = useOrders(
+    shopId || '',
+    statusFilter === 'All' ? undefined : statusFilter
+  );
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
       order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.customer.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || order.status.toLowerCase() === statusFilter.toLowerCase();
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
-  const handleStatusChange = (orderId: string, newStatus: string) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
-    ));
-    toast.success(`Order status updated to ${newStatus}`);
+  const handleStatusChange = async (orderId: string, newStatus: Order['status']) => {
+    try {
+      await updateOrderStatus(orderId, newStatus);
+      toast.success(`Order status updated to ${newStatus}`);
+    } catch (error) {
+      toast.error('Failed to update order status');
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -177,7 +104,7 @@ export default function VendorOrders() {
     });
   };
 
-  const handleWhatsAppClick = (phone: string, order: any) => {
+  const handleWhatsAppClick = (phone: string, order: Order) => {
     const message = `
 Assalamualaikum ${order.customer.name}!
 
@@ -219,30 +146,24 @@ How can I help you today?
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <div className="paper-card p-4">
-              <p className="text-2xl font-bold text-[#111111]">{orders.length}</p>
+              <p className="text-2xl font-bold text-[#111111]">{stats.total}</p>
               <p className="text-sm text-[#6E6A63]">Total Orders</p>
             </div>
             <div className="paper-card p-4">
-              <p className="text-2xl font-bold text-amber-600">
-                {orders.filter(o => o.status === 'pending').length}
-              </p>
+              <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
               <p className="text-sm text-[#6E6A63]">Pending</p>
             </div>
             <div className="paper-card p-4">
-              <p className="text-2xl font-bold text-blue-600">
-                {orders.filter(o => o.status === 'confirmed' || o.status === 'shipped').length}
-              </p>
+              <p className="text-2xl font-bold text-blue-600">{stats.inProgress}</p>
               <p className="text-sm text-[#6E6A63]">In Progress</p>
             </div>
             <div className="paper-card p-4">
-              <p className="text-2xl font-bold text-green-600">
-                {orders.filter(o => o.status === 'delivered').length}
-              </p>
+              <p className="text-2xl font-bold text-green-600">{stats.delivered}</p>
               <p className="text-sm text-[#6E6A63]">Delivered</p>
             </div>
             <div className="paper-card p-4">
               <p className="text-2xl font-bold text-[#111111]">
-                Rs {orders.reduce((acc, o) => acc + o.amount, 0).toLocaleString()}
+                Rs {stats.revenue.toLocaleString()}
               </p>
               <p className="text-sm text-[#6E6A63]">Total Revenue</p>
             </div>
@@ -278,131 +199,139 @@ How can I help you today?
           </div>
 
           {/* Orders List */}
-          <div className="space-y-4">
-            {filteredOrders.map((order) => (
-              <div key={order.id} className="paper-card overflow-hidden">
-                <div 
-                  className="p-4 md:p-6 cursor-pointer"
-                  onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
-                >
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <img 
-                        src={order.productImage} 
-                        alt={order.product}
-                        className="w-16 h-16 rounded-lg object-cover"
-                      />
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-[#111111]">{order.id}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusClass(order.status)}`}>
-                            {getStatusIcon(order.status)}
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                          </span>
+          {loading ? (
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredOrders.map((order) => (
+                <div key={order.id} className="paper-card overflow-hidden">
+                  <div 
+                    className="p-4 md:p-6 cursor-pointer"
+                    onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <img 
+                          src={order.productImage} 
+                          alt={order.product}
+                          className="w-16 h-16 rounded-lg object-cover"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-[#111111]">{order.id}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusClass(order.status)}`}>
+                              {getStatusIcon(order.status)}
+                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            </span>
+                          </div>
+                          <p className="text-[#111111] font-medium">{order.product}</p>
+                          <p className="text-sm text-[#6E6A63]">
+                            {formatDate(order.date)} at {formatTime(order.date)}
+                          </p>
                         </div>
-                        <p className="text-[#111111] font-medium">{order.product}</p>
-                        <p className="text-sm text-[#6E6A63]">
-                          {formatDate(order.date)} at {formatTime(order.date)}
-                        </p>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between md:justify-end gap-6">
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-[#111111]">
-                          Rs {order.amount.toLocaleString()}
-                        </p>
-                        <p className="text-sm text-[#6E6A63]">
-                          Qty: {order.quantity}
-                        </p>
+                      
+                      <div className="flex items-center justify-between md:justify-end gap-6">
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-[#111111]">
+                            Rs {order.amount.toLocaleString()}
+                          </p>
+                          <p className="text-sm text-[#6E6A63]">
+                            Qty: {order.quantity}
+                          </p>
+                        </div>
+                        <button className="p-2 hover:bg-[#111111]/5 rounded-lg transition-colors">
+                          {expandedOrder === order.id ? (
+                            <ChevronUp className="w-5 h-5 text-[#6E6A63]" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5 text-[#6E6A63]" />
+                          )}
+                        </button>
                       </div>
-                      <button className="p-2 hover:bg-[#111111]/5 rounded-lg transition-colors">
-                        {expandedOrder === order.id ? (
-                          <ChevronUp className="w-5 h-5 text-[#6E6A63]" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5 text-[#6E6A63]" />
-                        )}
-                      </button>
                     </div>
                   </div>
+
+                  {/* Expanded Details */}
+                  {expandedOrder === order.id && (
+                    <div className="border-t border-[#111111]/10 p-4 md:p-6 bg-[#111111]/5">
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {/* Customer Details */}
+                        <div>
+                          <h4 className="font-semibold text-[#111111] mb-3">Customer Details</h4>
+                          <div className="space-y-2 text-sm">
+                            <p className="text-[#111111]"><strong>Name:</strong> {order.customer.name}</p>
+                            <p className="text-[#6E6A63]"><strong>Phone:</strong> {order.customer.phone}</p>
+                            <p className="text-[#6E6A63]"><strong>Address:</strong> {order.customer.address}</p>
+                            <p className="text-[#6E6A63]"><strong>City:</strong> {order.customer.city}</p>
+                          </div>
+                          
+                          {order.notes && (
+                            <div className="mt-4 p-3 bg-amber-50 rounded-lg">
+                              <p className="text-sm text-amber-800">
+                                <strong>Note:</strong> {order.notes}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div>
+                          <h4 className="font-semibold text-[#111111] mb-3">Actions</h4>
+                          
+                          {/* Status Update */}
+                          <div className="mb-4">
+                            <p className="text-sm text-[#6E6A63] mb-2">Update Status</p>
+                            <div className="flex flex-wrap gap-2">
+                              {(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const).map((status) => (
+                                <button
+                                  key={status}
+                                  onClick={() => handleStatusChange(order.id, status)}
+                                  disabled={order.status === status}
+                                  className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-all ${
+                                    order.status === status
+                                      ? 'bg-[#111111] text-white'
+                                      : 'bg-white text-[#111111] hover:bg-[#111111]/5'
+                                  }`}
+                                >
+                                  {status}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Contact Buttons */}
+                          <div className="flex gap-2">
+                            <Button 
+                              className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
+                              onClick={() => handleWhatsAppClick(order.customer.phone, order)}
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                              WhatsApp
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              className="flex-1 gap-2"
+                              onClick={() => window.location.href = `tel:${order.customer.phone}`}
+                            >
+                              <Phone className="w-4 h-4" />
+                              Call
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-                {/* Expanded Details */}
-                {expandedOrder === order.id && (
-                  <div className="border-t border-[#111111]/10 p-4 md:p-6 bg-[#111111]/5">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {/* Customer Details */}
-                      <div>
-                        <h4 className="font-semibold text-[#111111] mb-3">Customer Details</h4>
-                        <div className="space-y-2 text-sm">
-                          <p className="text-[#111111]"><strong>Name:</strong> {order.customer.name}</p>
-                          <p className="text-[#6E6A63]"><strong>Phone:</strong> {order.customer.phone}</p>
-                          <p className="text-[#6E6A63]"><strong>Address:</strong> {order.customer.address}</p>
-                          <p className="text-[#6E6A63]"><strong>City:</strong> {order.customer.city}</p>
-                        </div>
-                        
-                        {order.notes && (
-                          <div className="mt-4 p-3 bg-amber-50 rounded-lg">
-                            <p className="text-sm text-amber-800">
-                              <strong>Note:</strong> {order.notes}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <div>
-                        <h4 className="font-semibold text-[#111111] mb-3">Actions</h4>
-                        
-                        {/* Status Update */}
-                        <div className="mb-4">
-                          <p className="text-sm text-[#6E6A63] mb-2">Update Status</p>
-                          <div className="flex flex-wrap gap-2">
-                            {['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].map((status) => (
-                              <button
-                                key={status}
-                                onClick={() => handleStatusChange(order.id, status)}
-                                disabled={order.status === status}
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-all ${
-                                  order.status === status
-                                    ? 'bg-[#111111] text-white'
-                                    : 'bg-white text-[#111111] hover:bg-[#111111]/5'
-                                }`}
-                              >
-                                {status}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Contact Buttons */}
-                        <div className="flex gap-2">
-                          <Button 
-                            className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
-                            onClick={() => handleWhatsAppClick(order.customer.phone, order)}
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                            WhatsApp
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            className="flex-1 gap-2"
-                            onClick={() => window.location.href = `tel:${order.customer.phone}`}
-                          >
-                            <Phone className="w-4 h-4" />
-                            Call
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Empty State */}
-          {filteredOrders.length === 0 && (
+          {!loading && filteredOrders.length === 0 && (
             <div className="text-center py-16">
               <ShoppingCart className="w-16 h-16 text-[#6E6A63]/30 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-[#111111] mb-2">
