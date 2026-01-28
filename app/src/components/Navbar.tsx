@@ -16,8 +16,19 @@ export default function Navbar() {
   const { currentUser, userRole } = useAuth();
   
   // Don't show navbar on vendor dashboard pages
-  const isVendorRoute = location.pathname.startsWith('/vendor');
-  if (isVendorRoute) return null;
+  const hideNavbarRoutes = [
+    '/vendor/dashboard',
+    '/vendor/products',
+    '/vendor/orders',
+    '/vendor/profile',
+  ];
+
+  const shouldHideNavbar = hideNavbarRoutes.some(path =>
+    location.pathname.startsWith(path)
+  );
+  
+  if (shouldHideNavbar) return null;
+
 
   useEffect(() => {
     const handleScroll = () => {
