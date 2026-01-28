@@ -1,18 +1,13 @@
+// src/pages/HomePage.tsx
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronDown, Store, Heart, ShoppingBag, Star, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-
-// Mock data for featured content
-const featuredShop = {
-  id: '1',
-  name: "Hina's Boutique",
-  tagline: 'Traditional wear & everyday elegance',
-  description: 'Handpicked fabrics, honest prices, and a fresh start. Every order helps Hina restock and rebuild.',
-  image: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=800&q=80',
-  category: 'Fashion',
-};
+import { useShops } from '@/hooks/useShops';
+import { useProducts } from '@/hooks/useProducts';
+import { useStories } from '@/hooks/useStories';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const categories = [
   { name: 'Fashion & Tailoring', image: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=400&q=80', count: 12 },
@@ -23,85 +18,14 @@ const categories = [
   { name: 'Groceries & Spices', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80', count: 11 },
 ];
 
-const stories = [
-  {
-    id: '1',
-    name: 'Hina Yousuf',
-    shop: "Hina's Boutique",
-    quote: 'I started with one sewing machine. After the fire, I thought it was over. But the community kept showing up.',
-    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&q=80',
-  },
-  {
-    id: '2',
-    name: 'Rashid Ahmed',
-    shop: 'Rashid Mobile Corner',
-    quote: 'Every repair I complete is a step toward rebuilding what we lost. Your trust keeps me going.',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
-  },
-  {
-    id: '3',
-    name: 'Sara Khan',
-    shop: 'Home Bakes',
-    quote: 'Baking was my passion. Now, with every order, I feel like I am rising again too.',
-    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&q=80',
-  },
-];
-
-const featuredProducts = [
-  {
-    id: '1',
-    name: 'Hand-embroidered Kurta',
-    price: 2400,
-    image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80',
-    shop: "Hina's Boutique",
-  },
-  {
-    id: '2',
-    name: 'Traditional Scarf',
-    price: 1200,
-    image: 'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=400&q=80',
-    shop: "Hina's Boutique",
-  },
-  {
-    id: '3',
-    name: 'Mobile Repair Service',
-    price: 800,
-    image: 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=400&q=80',
-    shop: 'Rashid Mobile Corner',
-  },
-];
-
-const testimonials = [
-  {
-    id: '1',
-    name: 'Bilal Q.',
-    location: 'Lahore',
-    orders: 3,
-    content: 'Ordered a tailored shirt. Fit perfectly, and the owner called to confirm the size. That is service.',
-    rating: 5,
-  },
-  {
-    id: '2',
-    name: 'Amina R.',
-    location: 'Karachi',
-    orders: 5,
-    content: 'Knowing my purchase helps someone rebuild their life makes shopping here so meaningful.',
-    rating: 5,
-  },
-];
-
-const stats = [
-  { label: 'Shops Supported', value: '45+', icon: Store },
-  { label: 'Orders Placed', value: '1,240+', icon: ShoppingBag },
-  { label: 'Families Helped', value: '120+', icon: Users },
-  { label: 'Donations Received', value: 'Rs 500K+', icon: Heart },
-];
-
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
 
+  const { shops: featuredShops, loading: shopsLoading } = useShops({ featured: true, limit: 3 });
+  const { products: featuredProducts, loading: productsLoading } = useProducts({ limit: 3 });
+  const { stories, loading: storiesLoading } = useStories(3);
+
   useEffect(() => {
-    // Scroll to top on mount
     window.scrollTo(0, 0);
   }, []);
 
@@ -111,58 +35,62 @@ export default function HomePage() {
     });
   };
 
+  // Get the first featured shop for hero section
+  const heroShop = featuredShops[0];
+
   return (
     <div className="min-h-screen bg-[#F4EFE6]">
       {/* Section 1: Hero - Featured Shop */}
       <section ref={heroRef} className="section-pinned flex items-center justify-center pt-20">
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-8">
-          <div className="paper-card max-w-6xl mx-auto overflow-hidden transform -rotate-1 hover:rotate-0 transition-transform duration-500">
-            <div className="grid md:grid-cols-2 gap-0">
-              {/* Image Side */}
-              <div className="relative h-64 md:h-[500px] overflow-hidden">
-                <img 
-                  src={featuredShop.image} 
-                  alt={featuredShop.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-4 right-4">
-                  <span className="tag-accent">Featured Shop</span>
+          {shopsLoading || !heroShop ? (
+            <Skeleton className="h-[500px] w-full max-w-6xl mx-auto rounded-2xl" />
+          ) : (
+            <div className="paper-card max-w-6xl mx-auto overflow-hidden transform -rotate-1 hover:rotate-0 transition-transform duration-500">
+              <div className="grid md:grid-cols-2 gap-0">
+                <div className="relative h-64 md:h-[500px] overflow-hidden">
+                  <img 
+                    src={heroShop.image} 
+                    alt={heroShop.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-4 right-4">
+                    <span className="tag-accent">Featured Shop</span>
+                  </div>
                 </div>
-              </div>
-              
-              {/* Content Side */}
-              <div className="p-8 md:p-12 flex flex-col justify-center bg-gradient-to-b from-transparent to-black/5">
-                <p className="text-[#6E6A63] text-sm font-mono uppercase tracking-wider mb-3">
-                  {featuredShop.category}
-                </p>
-                <h1 className="text-display font-bold text-[#111111] mb-3">
-                  {featuredShop.name}
-                </h1>
-                <p className="text-lg text-[#6E6A63] mb-4">
-                  {featuredShop.tagline}
-                </p>
-                <p className="text-[#111111]/80 mb-8 leading-relaxed">
-                  {featuredShop.description}
-                </p>
-                <div className="flex flex-wrap gap-4">
-                  <Link to={`/shop/${featuredShop.id}`}>
-                    <Button className="btn-primary gap-2">
-                      Visit Shop
-                      <ArrowRight className="w-4 h-4" />
-                    </Button>
-                  </Link>
-                  <Link to="/shops">
-                    <Button className="btn-outline">
-                      Browse All Shops
-                    </Button>
-                  </Link>
+                
+                <div className="p-8 md:p-12 flex flex-col justify-center bg-gradient-to-b from-transparent to-black/5">
+                  <p className="text-[#6E6A63] text-sm font-mono uppercase tracking-wider mb-3">
+                    {heroShop.category}
+                  </p>
+                  <h1 className="text-display font-bold text-[#111111] mb-3">
+                    {heroShop.name}
+                  </h1>
+                  <p className="text-lg text-[#6E6A63] mb-4">
+                    {heroShop.description?.substring(0, 100)}...
+                  </p>
+                  <p className="text-[#111111]/80 mb-8 leading-relaxed">
+                    {heroShop.story?.substring(0, 150)}...
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    <Link to={`/shop/${heroShop.id}`}>
+                      <Button className="btn-primary gap-2">
+                        Visit Shop
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                    <Link to="/shops">
+                      <Button className="btn-outline">
+                        Browse All Shops
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
         
-        {/* Scroll Indicator */}
         <div className="scroll-indicator">
           <span className="text-xs text-[#6E6A63] font-mono uppercase tracking-wider">Scroll</span>
           <ChevronDown className="w-5 h-5 text-[#6E6A63]" />
@@ -173,17 +101,26 @@ export default function HomePage() {
       <section className="section-flowing bg-[#111111] py-12">
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <stat.icon className="w-6 h-6 text-[#D93A3A] mx-auto mb-3" />
-                <p className="text-3xl md:text-4xl font-bold text-[#F4EFE6] mb-1">
-                  {stat.value}
-                </p>
-                <p className="text-sm text-[#F4EFE6]/60">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
+            <div className="text-center">
+              <Store className="w-6 h-6 text-[#D93A3A] mx-auto mb-3" />
+              <p className="text-3xl md:text-4xl font-bold text-[#F4EFE6] mb-1">45+</p>
+              <p className="text-sm text-[#F4EFE6]/60">Shops Supported</p>
+            </div>
+            <div className="text-center">
+              <ShoppingBag className="w-6 h-6 text-[#D93A3A] mx-auto mb-3" />
+              <p className="text-3xl md:text-4xl font-bold text-[#F4EFE6] mb-1">1,240+</p>
+              <p className="text-sm text-[#F4EFE6]/60">Orders Placed</p>
+            </div>
+            <div className="text-center">
+              <Users className="w-6 h-6 text-[#D93A3A] mx-auto mb-3" />
+              <p className="text-3xl md:text-4xl font-bold text-[#F4EFE6] mb-1">120+</p>
+              <p className="text-sm text-[#F4EFE6]/60">Families Helped</p>
+            </div>
+            <div className="text-center">
+              <Heart className="w-6 h-6 text-[#D93A3A] mx-auto mb-3" />
+              <p className="text-3xl md:text-4xl font-bold text-[#F4EFE6] mb-1">Rs 500K+</p>
+              <p className="text-sm text-[#F4EFE6]/60">Donations Received</p>
+            </div>
           </div>
         </div>
       </section>
@@ -211,11 +148,7 @@ export default function HomePage() {
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {categories.map((category, index) => (
-                <Link 
-                  key={index} 
-                  to="/shops"
-                  className="group"
-                >
+                <Link key={index} to="/shops" className="group">
                   <div className="paper-card overflow-hidden transform hover:-translate-y-1 transition-all duration-300">
                     <div className="relative h-32 overflow-hidden">
                       <img 
@@ -256,39 +189,47 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              {stories.map((story, index) => (
-                <div 
-                  key={story.id}
-                  className="paper-card overflow-hidden transform hover:-translate-y-2 transition-all duration-300"
-                  style={{ transform: `rotate(${index === 0 ? '-1' : index === 2 ? '1' : '0'}deg)` }}
-                >
-                  <div className="relative h-64 overflow-hidden">
-                    <img 
-                      src={story.image} 
-                      alt={story.name}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <p className="text-white font-semibold text-lg">{story.name}</p>
-                      <p className="text-white/80 text-sm">{story.shop}</p>
+            {storiesLoading ? (
+              <div className="grid md:grid-cols-3 gap-8">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-96 w-full" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-3 gap-8">
+                {stories.map((story, index) => (
+                  <div 
+                    key={story.id}
+                    className="paper-card overflow-hidden transform hover:-translate-y-2 transition-all duration-300"
+                    style={{ transform: `rotate(${index === 0 ? '-1' : index === 2 ? '1' : '0'}deg)` }}
+                  >
+                    <div className="relative h-64 overflow-hidden">
+                      <img 
+                        src={story.image} 
+                        alt={story.ownerName}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <p className="text-white font-semibold text-lg">{story.ownerName}</p>
+                        <p className="text-white/80 text-sm">{story.shopName}</p>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <blockquote className="text-[#111111]/80 italic leading-relaxed mb-4">
+                        "{story.quote}"
+                      </blockquote>
+                      <Link to={`/shop/${story.id}`}>
+                        <Button variant="ghost" className="p-0 h-auto text-[#D93A3A] hover:text-[#C43333] gap-2">
+                          Read Full Story
+                          <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      </Link>
                     </div>
                   </div>
-                  <div className="p-6">
-                    <blockquote className="text-[#111111]/80 italic leading-relaxed mb-4">
-                      "{story.quote}"
-                    </blockquote>
-                    <Link to="/stories">
-                      <Button variant="ghost" className="p-0 h-auto text-[#D93A3A] hover:text-[#C43333] gap-2">
-                        Read Full Story
-                        <ArrowRight className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             <div className="text-center mt-12">
               <Link to="/stories">
@@ -367,44 +308,52 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
-              {featuredProducts.map((product, index) => (
-                <Link 
-                  key={product.id}
-                  to={`/product/${product.id}`}
-                  className="group"
-                >
-                  <div 
-                    className="paper-card overflow-hidden transform hover:-translate-y-2 transition-all duration-300"
-                    style={{ transform: `rotate(${index === 0 ? '-1' : index === 2 ? '1' : '0'}deg)` }}
+            {productsLoading ? (
+              <div className="grid md:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-96 w-full" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-3 gap-6">
+                {featuredProducts.map((product, index) => (
+                  <Link 
+                    key={product.id}
+                    to={`/product/${product.id}`}
+                    className="group"
                   >
-                    <div className="relative h-64 overflow-hidden">
-                      <img 
-                        src={product.image} 
-                        alt={product.name}
-                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute top-4 right-4">
-                        <span className="bg-[#D93A3A] text-white px-3 py-1 rounded-full text-sm font-medium">
-                          Rs {product.price.toLocaleString()}
-                        </span>
+                    <div 
+                      className="paper-card overflow-hidden transform hover:-translate-y-2 transition-all duration-300"
+                      style={{ transform: `rotate(${index === 0 ? '-1' : index === 2 ? '1' : '0'}deg)` }}
+                    >
+                      <div className="relative h-64 overflow-hidden">
+                        <img 
+                          src={product.image} 
+                          alt={product.name}
+                          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute top-4 right-4">
+                          <span className="bg-[#D93A3A] text-white px-3 py-1 rounded-full text-sm font-medium">
+                            Rs {product.price.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-5">
+                        <p className="text-xs text-[#6E6A63] font-mono uppercase tracking-wider mb-2">
+                          {product.shopName}
+                        </p>
+                        <h3 className="font-semibold text-[#111111] text-lg mb-2 group-hover:text-[#D93A3A] transition-colors">
+                          {product.name}
+                        </h3>
+                        <p className="text-sm text-[#6E6A63]">
+                          Cash on Delivery
+                        </p>
                       </div>
                     </div>
-                    <div className="p-5">
-                      <p className="text-xs text-[#6E6A63] font-mono uppercase tracking-wider mb-2">
-                        {product.shop}
-                      </p>
-                      <h3 className="font-semibold text-[#111111] text-lg mb-2 group-hover:text-[#D93A3A] transition-colors">
-                        {product.name}
-                      </h3>
-                      <p className="text-sm text-[#6E6A63]">
-                        Cash on Delivery
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -476,7 +425,24 @@ export default function HomePage() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-8">
-              {testimonials.map((testimonial) => (
+              {[
+                {
+                  id: '1',
+                  name: 'Bilal Q.',
+                  location: 'Lahore',
+                  orders: 3,
+                  content: 'Ordered a tailored shirt. Fit perfectly, and the owner called to confirm the size. That is service.',
+                  rating: 5,
+                },
+                {
+                  id: '2',
+                  name: 'Amina R.',
+                  location: 'Karachi',
+                  orders: 5,
+                  content: 'Knowing my purchase helps someone rebuild their life makes shopping here so meaningful.',
+                  rating: 5,
+                },
+              ].map((testimonial) => (
                 <div 
                   key={testimonial.id}
                   className="paper-card p-8 transform hover:-translate-y-1 transition-all duration-300"
