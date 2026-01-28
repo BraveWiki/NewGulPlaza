@@ -15,7 +15,6 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,8 +28,8 @@ import {
   updateDoc,
   doc,
   serverTimestamp,
-  Unsubscribe 
 } from 'firebase/firestore';
+import type { Unsubscribe } from 'firebase/firestore';
 import { toast } from 'sonner';
 import type { Order } from '@/types';
 
