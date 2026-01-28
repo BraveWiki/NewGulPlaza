@@ -329,4 +329,187 @@ export default function VendorProducts() {
             />
             
             <div>
-              <label className="
+              <label className="text-sm text-[#6E6A63] mb-1 block">Description</label>
+              <Textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                rows={3}
+                className="bg-white border-[#111111]/10"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormInput
+                label="Price (Rs) *"
+                name="price"
+                type="number"
+                value={formData.price}
+                onChange={handleInputChange}
+                required
+              />
+              <FormInput
+                label="Original Price"
+                name="originalPrice"
+                type="number"
+                value={formData.originalPrice}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormInput
+                label="Stock *"
+                name="stock"
+                type="number"
+                value={formData.stock}
+                onChange={handleInputChange}
+                required
+              />
+              <div>
+                <label className="text-sm text-[#6E6A63] mb-1 block">Category *</label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-lg border border-[#111111]/10 bg-white"
+                  required
+                >
+                  <option value="">Select category</option>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <FormInput
+              label="Image URL"
+              name="image"
+              value={formData.image}
+              onChange={handleInputChange}
+              placeholder="https://example.com/image.jpg"
+            />
+
+            <div className="flex gap-3 pt-4">
+              <Button 
+                type="submit" 
+                className="flex-1 btn-primary"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                {editingProduct ? 'Update' : 'Add'} Product
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={() => {
+                  resetForm();
+                  setIsDialogOpen(false);
+                }}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// Sub-components
+const StatCard = ({ value, label, color }: { value: number; label: string; color?: string }) => (
+  <div className="paper-card p-4">
+    <p className={`text-2xl font-bold ${color === 'green' ? 'text-green-600' : color === 'amber' ? 'text-amber-600' : 'text-[#111111]'}`}>
+      {value}
+    </p>
+    <p className="text-sm text-[#6E6A63]">{label}</p>
+  </div>
+);
+
+const ProductCard = ({ product, onEdit, onDelete, onToggle }: {
+  product: Product;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggle: () => void;
+}) => (
+  <div className="paper-card overflow-hidden">
+    <div className="relative h-48 overflow-hidden">
+      <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+      {!product.isAvailable && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <span className="bg-[#111111] text-white px-4 py-2 rounded-full text-sm">Out of Stock</span>
+        </div>
+      )}
+      {product.stock <= 5 && product.stock > 0 && (
+        <div className="absolute top-3 left-3 bg-[#D93A3A] text-white px-2 py-1 rounded-full text-xs">
+          Only {product.stock} left
+        </div>
+      )}
+      {product.originalPrice && (
+        <div className="absolute top-3 right-3 bg-green-600 text-white px-2 py-1 rounded-full text-xs">
+          Sale
+        </div>
+      )}
+    </div>
+    
+    <div className="p-5">
+      <span className="tag text-xs mb-2 inline-block">{product.category}</span>
+      <h3 className="font-semibold text-[#111111] mb-1">{product.name}</h3>
+      <p className="text-sm text-[#6E6A63] mb-3 line-clamp-2">{product.description}</p>
+      
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-xl font-bold text-[#111111]">Rs {product.price.toLocaleString()}</span>
+        {product.originalPrice && (
+          <span className="text-sm text-[#6E6A63] line-through">Rs {product.originalPrice.toLocaleString()}</span>
+        )}
+      </div>
+      
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={onEdit}>
+          <Edit2 className="w-4 h-4" />
+          Edit
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          className={`flex-1 gap-1 ${product.isAvailable ? 'text-green-600' : 'text-amber-600'}`}
+          onClick={onToggle}
+        >
+          {product.isAvailable ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          {product.isAvailable ? 'Active' : 'Inactive'}
+        </Button>
+        <Button variant="outline" size="sm" className="text-[#D93A3A] hover:bg-[#D93A3A]/10" onClick={onDelete}>
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  </div>
+);
+
+const EmptyState = ({ onAdd, hasSearch }: { onAdd: () => void; hasSearch: boolean }) => (
+  <div className="text-center py-16">
+    <Package className="w-16 h-16 text-[#6E6A63]/30 mx-auto mb-4" />
+    <h3 className="text-xl font-semibold text-[#111111] mb-2">
+      {hasSearch ? 'No products found' : 'No products yet'}
+    </h3>
+    <p className="text-[#6E6A63] mb-6">
+      {hasSearch ? 'Try adjusting your search' : 'Start by adding your first product'}
+    </p>
+    {!hasSearch && (
+      <Button className="btn-primary gap-2" onClick={onAdd}>
+        <Plus className="w-4 h-4" />
+        Add Product
+      </Button>
+    )}
+  </div>
+);
+
+const FormInput = ({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) => (
+  <div>
+    <label className="text-sm text-[#6E6A63] mb-1 block">{label}</label>
+    <Input {...props} className="bg-white border-[#111111]/10" />
+  </div>
+);
