@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { useShop } from '@/hooks/useShops';
 import { useProducts } from '@/hooks/useProducts';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
 
 export default function ShopPage() {
   const { shopId } = useParams<{ shopId: string }>();
