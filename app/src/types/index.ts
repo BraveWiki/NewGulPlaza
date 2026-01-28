@@ -1,88 +1,91 @@
-export interface ShopOwner {
+// src/types/index.ts
+export interface Shop {
   id: string;
-  uid: string;
   name: string;
-  shopName: string;
   shopNameUrdu?: string;
+  ownerName: string;
   email: string;
   phone: string;
-  whatsapp: string;
+  whatsapp?: string;
   address: string;
   city: string;
   category: string;
+  description: string;
   story: string;
-  storyUrdu?: string;
-  photoURL: string;
-  shopURL: string;
+  image: string;
+  ownerImage?: string;
   isVerified: boolean;
   isFeatured: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  joinedDate: string;
+  productsCount: number;
+  ordersCompleted: number;
+  rating: number;
+  userId: string; // Link to Firebase Auth user
+  status: 'active' | 'pending' | 'suspended';
 }
 
 export interface Product {
   id: string;
-  shopId: string;
-  shopOwnerId: string;
   name: string;
-  nameUrdu?: string;
   description: string;
-  descriptionUrdu?: string;
   price: number;
   originalPrice?: number;
   stock: number;
   category: string;
-  images: string[];
+  image: string;
+  images?: string[];
+  shopId: string;
+  shopName: string;
   isAvailable: boolean;
-  isFeatured: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  views: number;
+  orders: number;
+  features?: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Order {
   id: string;
   productId: string;
-  productName: string;
+  product: string;
+  productImage: string;
   shopId: string;
-  shopOwnerId: string;
-  customerName: string;
-  customerPhone: string;
-  customerAddress: string;
-  customerCity: string;
+  customer: {
+    name: string;
+    phone: string;
+    address: string;
+    city: string;
+  };
   quantity: number;
-  totalAmount: number;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface Donation {
-  id: string;
-  donorName: string;
-  donorEmail?: string;
   amount: number;
-  message?: string;
-  isAnonymous: boolean;
-  createdAt: Date;
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  date: string;
+  notes?: string;
+  createdAt: string;
 }
 
-export interface Testimonial {
+export interface Story {
   id: string;
-  shopOwnerId: string;
-  shopOwnerName: string;
+  ownerName: string;
   shopName: string;
-  content: string;
-  contentUrdu?: string;
-  photoURL?: string;
-  isFeatured: boolean;
-  createdAt: Date;
+  category: string;
+  city: string;
+  quote: string;
+  fullStory: string;
+  image: string;
+  shopImage: string;
+  productsCount: number;
+  ordersCompleted: number;
+  impact: string;
+  order: number;
 }
 
-export interface Category {
-  id: string;
-  name: string;
-  nameUrdu: string;
-  image: string;
-  count: number;
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+  role: 'vendor' | 'admin' | 'customer';
+  shopId?: string;
+  createdAt: string;
 }
