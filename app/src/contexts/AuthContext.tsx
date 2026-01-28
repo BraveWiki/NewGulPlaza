@@ -8,19 +8,21 @@ import {
   updateProfile,
   type User as FirebaseUser 
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { shopService } from '@/services/shopService';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
 
 interface AuthContextType {
   currentUser: FirebaseUser | null;
   userProfile: UserProfile | null;
+  userRole: 'vendor' | 'admin' | 'customer' | null;
   shopId: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName?: string) => Promise<void>;
   logout: () => Promise<void>;
   isVendor: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +30,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userRole, setUserRole] = useState<'vendor' | 'admin' | 'customer' | null>(null);
   const [shopId, setShopId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -36,16 +39,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCurrentUser(user);
       
       if (user) {
-        // Check if user has a shop
+        // Fetch user profile from Firestore
         try {
-          const shop = await shopService.getShopByUserId(user.uid);
-          if (shop) {
-            setShopId(shop.id);
+          const profileDoc = await getDoc(doc(db, 'users', user.uid));
+          if (profileDoc.exists()) {
+            const profile = profileDoc.data() as UserProfile;
+            setUserProfile(profile);
+            setUserRole(profile.role);
+            if (profile.role === 'vendor' && profile.shopId) {
+              setShopId(profile.shopId);
+            }
+          } else {
+            // Default to customer if no profile exists
+            setUserRole('customer');
           }
         } catch (error) {
-          console.error('Error fetching user shop:', error);
+          console.error('Error fetching user profile:', error);
+          setUserRole('customer');
         }
       } else {
+        setUserProfile(null);
+        setUserRole(null);
         setShopId(null);
       }
       
@@ -65,22 +79,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (displayName) {
       await updateProfile(user, { displayName });
     }
+    
+    // Create user profile in Firestore
+    const userProfile: Omit<UserProfile, 'uid'> = {
+      email: user.email || '',
+      displayName: displayName || user.email?.split('@')[0] || 'User',
+      role: 'customer',
+      createdAt: new Date().toISOString()
+    };
+    
+    await setDoc(doc(db, 'users', user.uid), userProfile);
   };
 
   const logout = async () => {
     await firebaseSignOut(auth);
     setShopId(null);
+    setUserRole(null);
+    setUserProfile(null);
   };
 
   const value = {
     currentUser,
     userProfile,
+    userRole,
     shopId,
     loading,
     login,
     register,
     logout,
-    isVendor: !!shopId
+    isVendor: userRole === 'vendor',
+    isAdmin: userRole === 'admin'
   };
 
   return (
@@ -97,3 +125,6 @@ export const useAuth = () => {
   }
   return context;
 };
+
+// Add missing import
+import { setDoc } from 'firebase/firestore';
