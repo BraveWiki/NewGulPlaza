@@ -1,17 +1,23 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Store, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
+// src/pages/vendor/VendorLogin.tsx
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { Store, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+type AuthMode = 'login' | 'register';
+
 export default function VendorLogin() {
   const navigate = useNavigate();
-  const { login, register, currentUser } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const location = useLocation();
+  const { login, register, isAuthenticated, isVendor, loading: authLoading } = useAuth();
+  
+  const [mode, setMode] = useState<AuthMode>('login');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     email: '',
@@ -20,52 +26,100 @@ export default function VendorLogin() {
     shopName: '',
   });
 
-  // Redirect if already logged in
-  if (currentUser) {
-    navigate('/vendor/dashboard');
-    return null;
-  }
+  // Redirect if already authenticated as vendor
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      if (isVendor) {
+        const from = location.state?.from?.pathname || '/vendor/dashboard';
+        navigate(from, { replace: true });
+      } else {
+        // User is authenticated but not a vendor - show message
+        toast.info('Please complete your vendor profile setup');
+      }
+    }
+  }, [isAuthenticated, isVendor, authLoading, navigate, location]);
+
+  const validateForm = (): boolean => {
+    setFormError(null);
+    
+    if (!formData.email.trim()) {
+      setFormError('Email is required');
+      return false;
+    }
+    
+    if (!formData.password) {
+      setFormError('Password is required');
+      return false;
+    }
+    
+    if (formData.password.length < 6) {
+      setFormError('Password must be at least 6 characters');
+      return false;
+    }
+    
+    if (mode === 'register') {
+      if (!formData.shopName.trim()) {
+        setFormError('Shop name is required');
+        return false;
+      }
+      
+      if (formData.password !== formData.confirmPassword) {
+        setFormError('Passwords do not match');
+        return false;
+      }
+    }
+    
+    return true;
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (formError) setFormError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+    
     setIsLoading(true);
+    setFormError(null);
 
     try {
-      if (isLogin) {
-        // Login
+      if (mode === 'login') {
         await login(formData.email, formData.password);
         toast.success('Welcome back!');
-        navigate('/vendor/dashboard');
       } else {
-        // Register
-        if (formData.password !== formData.confirmPassword) {
-          toast.error('Passwords do not match');
-          setIsLoading(false);
-          return;
-        }
-        if (formData.password.length < 6) {
-          toast.error('Password must be at least 6 characters');
-          setIsLoading(false);
-          return;
-        }
-        
-        await register(formData.email, formData.password);
-        toast.success('Account created successfully!');
-        navigate('/vendor/dashboard');
+        await register(formData.email, formData.password, formData.shopName);
+        toast.success('Account created! Please set up your shop profile.');
+        navigate('/vendor/onboarding');
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      toast.error(error.message || 'Authentication failed. Please try again.');
+      const errorMessage = error.code === 'auth/user-not-found' 
+        ? 'No account found with this email'
+        : error.code === 'auth/wrong-password'
+        ? 'Incorrect password'
+        : error.code === 'auth/email-already-in-use'
+        ? 'An account already exists with this email'
+        : error.message || 'Authentication failed. Please try again.';
+      setFormError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const toggleMode = () => {
+    setMode(prev => prev === 'login' ? 'register' : 'login');
+    setFormError(null);
+    setFormData({
+      email: '',
+      password: '',
+      confirmPassword: '',
+      shopName: '',
+    });
   };
 
   return (
@@ -82,23 +136,30 @@ export default function VendorLogin() {
             </span>
           </Link>
           <p className="text-[#6E6A63] mt-2">
-            Vendor Dashboard
+            Vendor Portal
           </p>
         </div>
 
         {/* Form Card */}
         <div className="paper-card p-8">
           <h1 className="text-2xl font-bold text-[#111111] mb-2 text-center">
-            {isLogin ? 'Welcome Back' : 'Join GulPlaza'}
+            {mode === 'login' ? 'Welcome Back' : 'Become a Vendor'}
           </h1>
           <p className="text-[#6E6A63] text-center mb-6">
-            {isLogin 
+            {mode === 'login' 
               ? 'Sign in to manage your shop' 
               : 'Create an account to start selling'}
           </p>
 
+          {formError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600 text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {formError}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
+            {mode === 'register' && (
               <div>
                 <label className="text-sm text-[#6E6A63] mb-1 block">Shop Name</label>
                 <div className="relative">
@@ -110,7 +171,7 @@ export default function VendorLogin() {
                     onChange={handleInputChange}
                     placeholder="Enter your shop name"
                     className="pl-12 py-6 bg-white border-[#111111]/10"
-                    required={!isLogin}
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -127,7 +188,8 @@ export default function VendorLogin() {
                   onChange={handleInputChange}
                   placeholder="Enter your email"
                   className="pl-12 py-6 bg-white border-[#111111]/10"
-                  required
+                  disabled={isLoading}
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -143,19 +205,21 @@ export default function VendorLogin() {
                   onChange={handleInputChange}
                   placeholder="Enter your password"
                   className="pl-12 pr-12 py-6 bg-white border-[#111111]/10"
-                  required
+                  disabled={isLoading}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6E6A63] hover:text-[#111111]"
+                  tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {!isLogin && (
+            {mode === 'register' && (
               <div>
                 <label className="text-sm text-[#6E6A63] mb-1 block">Confirm Password</label>
                 <div className="relative">
@@ -167,7 +231,8 @@ export default function VendorLogin() {
                     onChange={handleInputChange}
                     placeholder="Confirm your password"
                     className="pl-12 py-6 bg-white border-[#111111]/10"
-                    required={!isLogin}
+                    disabled={isLoading}
+                    autoComplete="new-password"
                   />
                 </div>
               </div>
@@ -185,7 +250,7 @@ export default function VendorLogin() {
                 </>
               ) : (
                 <>
-                  {isLogin ? 'Sign In' : 'Create Account'}
+                  {mode === 'login' ? 'Sign In' : 'Create Account'}
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
@@ -194,20 +259,25 @@ export default function VendorLogin() {
 
           <div className="mt-6 text-center">
             <button
-              onClick={() => setIsLogin(!isLogin)}
+              type="button"
+              onClick={toggleMode}
               className="text-[#D93A3A] hover:text-[#C43333] text-sm font-medium"
+              disabled={isLoading}
             >
-              {isLogin 
+              {mode === 'login' 
                 ? "Don't have an account? Sign up" 
                 : "Already have an account? Sign in"}
             </button>
           </div>
 
-          {isLogin && (
+          {mode === 'login' && (
             <div className="mt-4 text-center">
-              <button className="text-[#6E6A63] hover:text-[#111111] text-sm">
+              <Link 
+                to="/forgot-password" 
+                className="text-[#6E6A63] hover:text-[#111111] text-sm"
+              >
                 Forgot password?
-              </button>
+              </Link>
             </div>
           )}
         </div>
@@ -217,14 +287,6 @@ export default function VendorLogin() {
           <Link to="/" className="text-[#6E6A63] hover:text-[#111111] text-sm">
             ← Back to GulPlaza
           </Link>
-        </div>
-
-        {/* Demo Credentials */}
-        <div className="mt-8 p-4 bg-[#111111]/5 rounded-xl">
-          <p className="text-xs text-[#6E6A63] text-center">
-            <strong>Demo:</strong> Use any email and password (min 6 chars) to login. 
-            Firebase authentication will be set up separately.
-          </p>
         </div>
       </div>
     </div>
