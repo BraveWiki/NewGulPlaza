@@ -3,13 +3,9 @@ import { useState } from 'react';
 import { SeedDatabaseButton } from '@/components/SeedDatabaseButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { Shield, AlertTriangle } from 'lucide-react';
 
 export default function AdminPage() {
-  const { currentUser } = useAuth();
-  const navigate = useNavigate();
   const [adminKey, setAdminKey] = useState('');
   const [isVerified, setIsVerified] = useState(false);
 
